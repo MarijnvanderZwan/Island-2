@@ -8,13 +8,11 @@ APushableBlockPuzzle::APushableBlockPuzzle()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	PrimaryActorTick.bCanEverTick = true;
-	UE_LOG(LogTemp, Warning, TEXT("Constructor called"));
 }
 
 void APushableBlockPuzzle::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("Begin play called"));
 }
 
 void APushableBlockPuzzle::Tick(float DeltaTime)
@@ -27,8 +25,15 @@ void APushableBlockPuzzle::PostEditChangeProperty(struct FPropertyChangedEvent& 
 {
 	const FName width = FName("Width");
 	const FName height = FName("Height");
+	const FName obstacles = FName("Obstacles");
+	const FName goals = FName("Goals");
+	const FName blocks = FName("Blocks");
 	FName propertyName = PropertyChangedEvent.GetPropertyName();
-	if (propertyName != width && propertyName != height)
+	if (propertyName != width &&
+		propertyName != height &&
+		propertyName != obstacles &&
+		propertyName != goals &&
+		propertyName != blocks)
 	{
 		return;
 	}
@@ -36,7 +41,6 @@ void APushableBlockPuzzle::PostEditChangeProperty(struct FPropertyChangedEvent& 
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	UpdateTiles();
-	//UpdateTile();
 }
 #endif
 
@@ -46,31 +50,76 @@ void APushableBlockPuzzle::Destroyed()
 	ClearTiles();
 }
 
-void APushableBlockPuzzle::UpdateTile()
+void APushableBlockPuzzle::ParseObstacles()
 {
-	ClearTiles();
-
-	for (int x = 0; x < 1; x++)
+	for (auto& obstacle : Obstacles)
 	{
-		for (int y = 0; y < 1; y++)
+		auto tuple = Parse(obstacle);
+		if (tuple.Key >= 0)
 		{
-			CreateTile(x, y);
+			ParsedObstacles.Add(tuple);
+		}
+	}
+}
+
+void APushableBlockPuzzle::ParseGoals()
+{
+	for (auto& goal : Goals)
+	{
+		auto tuple = Parse(goal);
+		if (tuple.Key >= 0)
+		{
+			ParsedGoals.Add(tuple);
+		}
+	}
+}
+
+void APushableBlockPuzzle::ParseBlocks()
+{
+	for (auto& block : Blocks)
+	{
+		auto tuple = Parse(block);
+		if (tuple.Key >= 0)
+		{
+			ParsedBlocks.Add(tuple);
 		}
 	}
 }
 
 void APushableBlockPuzzle::UpdateTiles()
 {
+	ClearTiles();
+
+	ParseObstacles();
+	ParseGoals();
+	ParseBlocks();
 	for (int x = 0; x < Width; x++)
 	{
 		for (int y = 0; y < Height; y++)
 		{
-			CreateTile(x, y);
+			auto tuple = TTuple<int32, int32>(x, y);
+			if (ParsedObstacles.Contains(tuple))
+			{
+				CreateTile(x, y, ETileType::Blocking);
+			}
+			else if (ParsedGoals.Contains(tuple))
+			{
+				CreateTile(x, y, ETileType::Goal);
+			}
+			else
+			{
+				CreateTile(x, y, ETileType::Empty);
+			}
 		}
+	}
+
+	for (auto& block : ParsedBlocks)
+	{
+		CreateBlock(block.Key, block.Value);
 	}
 }
 
-void APushableBlockPuzzle::CreateTile(int x, int y)
+void APushableBlockPuzzle::CreateTile(const int x, const int y, ETileType tileType)
 {
 	UE_LOG(LogTemp, Warning, TEXT("%i %i"), x, y);
 	auto name = std::to_string(x) + " " + std::to_string(y);
@@ -79,11 +128,15 @@ void APushableBlockPuzzle::CreateTile(int x, int y)
 	auto tile = NewObject<UPuzzleTileComponent>(this, FName(name.c_str()));
 	tile->RegisterComponent();
 	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->SetWorldLocation(FVector(x * 200, y * 200, 0) + location);
-	/*
+	tile->SetWorldLocation(FVector(x * 100, y * 100, 0) + location);
+	Tiles.Add(tile);
 	tile->EmptyColor = EmptyColor;
 	tile->BlockingColor = BlockingColor;
 	tile->GoalColor = GoalColor;
+	tile->TileType = tileType;
+	tile->UpdateMaterial();
+	/*
+
 	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 	tile->InitializeComponent();
 	UE_LOG(LogTemp, Warning, TEXT("%i"), RootComponent->GetNumChildrenComponents());
@@ -91,12 +144,53 @@ void APushableBlockPuzzle::CreateTile(int x, int y)
 	//Tiles.Add(tile);*/
 }
 
+void APushableBlockPuzzle::CreateBlock(const int x, const int y)
+{
+	UE_LOG(LogTemp, Warning, TEXT("%i %i"), x, y);
+	auto name = std::to_string(x) + " " + std::to_string(y);
+
+	auto location = GetActorLocation();
+	auto tile = NewObject<UPuzzleTileComponent>(this, FName(name.c_str()));
+	tile->RegisterComponent();
+	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+	tile->SetWorldLocation(FVector(x * 100, y * 100, 100) + location);
+	Tiles.Add(tile);
+	tile->EmptyColor = EmptyColor;
+	tile->BlockingColor = BlockingColor;
+	tile->GoalColor = GoalColor;
+	tile->UpdateMaterial();
+	/*
+
+	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
+	tile->InitializeComponent();
+	UE_LOG(LogTemp, Warning, TEXT("%i"), RootComponent->GetNumChildrenComponents());
+	//Tiles.push_back(*tile);
+	//Tiles.Add(tile);*/
+}
+
+TTuple<int32, int32> APushableBlockPuzzle::Parse(FString str)
+{
+	if (str.Len() < 3)
+	{
+		return TTuple<int32, int32>(-1, -1);
+	}
+	int index = str.Find(" ");
+	FString xstr = str.Mid(0, index);
+	FString ystr = str.Mid(index, str.Len() - index);
+	int32 x = FCString::Atoi(*xstr);
+	int32 y = FCString::Atoi(*ystr);
+	return TTuple<int32, int32>(x, y);
+}
+
 
 void APushableBlockPuzzle::ClearTiles()
-{/*
+{
 	for (auto& tile : Tiles)
 	{
 		tile->DestroyComponent();
 	}
-	Tiles.Empty();*/
+	Tiles.Empty();
+	ParsedObstacles.Empty();
+	ParsedGoals.Empty();
+	ParsedBlocks.Empty();
 }
