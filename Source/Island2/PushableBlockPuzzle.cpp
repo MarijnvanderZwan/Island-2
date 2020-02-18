@@ -2,17 +2,61 @@
 #include <string>
 #include "PuzzleTileComponent.h"
 #include "PushableBlockTile.h"
+#include "PushableBlock2.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APushableBlockPuzzle::APushableBlockPuzzle()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	PrimaryActorTick.bCanEverTick = true;
+	Id = 0;
 }
 
 void APushableBlockPuzzle::BeginPlay()
 {
+	InitializeWithSize(Width, Height);
+	InitializeBlocks();
+	InitializeObstacles();
+	InitializeGoals();
 	Super::BeginPlay();
+}
+
+void APushableBlockPuzzle::InitializeBlocks()
+{
+	int i = 0;
+	for (auto &block : PushableBlocks)
+	{
+		block->Id = i++;
+		auto location = block->GetActorLocation();
+		InitializeLocation(location, 1);
+	}
+}
+
+void APushableBlockPuzzle::InitializeGoals()
+{
+	for (auto& goal : Goals)
+	{
+		auto location = goal->GetActorLocation();
+		InitializeLocation(location, -1);
+	}
+}
+
+void APushableBlockPuzzle::InitializeObstacles()
+{
+	for (auto& obstacle : Obstacles)
+	{
+		auto location = obstacle->GetActorLocation();
+		InitializeLocation(location, 2);
+	}
+}
+void APushableBlockPuzzle::InitializeLocation(FVector &location, int32 value)
+{
+	auto coordinates = GetCoordinates(location);
+	if (IsValidCell(coordinates.Key, coordinates.Value))
+	{
+		Cells[coordinates.Key][coordinates.Value] = value;
+	}
 }
 
 void APushableBlockPuzzle::Tick(float DeltaTime)
@@ -37,92 +81,32 @@ void APushableBlockPuzzle::PostEditChangeProperty(struct FPropertyChangedEvent& 
 	{
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("UPDATE!"));
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	UpdateTiles();
 }
 #endif
 
-void APushableBlockPuzzle::Destroyed()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Destroyed"));
-	ClearTiles();
-}
-
-void APushableBlockPuzzle::ParseObstacles()
-{
-	for (auto& obstacle : Obstacles)
-	{
-		auto tuple = Parse(obstacle);
-		if (tuple.Key >= 0)
-		{
-			ParsedObstacles.Add(tuple);
-		}
-	}
-}
-
-void APushableBlockPuzzle::ParseGoals()
-{
-	for (auto& goal : Goals)
-	{
-		auto tuple = Parse(goal);
-		if (tuple.Key >= 0)
-		{
-			ParsedGoals.Add(tuple);
-		}
-	}
-}
-
-void APushableBlockPuzzle::ParseBlocks()
-{
-	for (auto& block : Blocks)
-	{
-		auto tuple = Parse(block);
-		if (tuple.Key >= 0)
-		{
-			ParsedBlocks.Add(tuple);
-		}
-	}
-}
-
 void APushableBlockPuzzle::UpdateTiles()
 {
 	ClearTiles();
-
-	ParseObstacles();
-	ParseGoals();
-	ParseBlocks();
 	for (int x = 0; x < Width; x++)
 	{
 		for (int y = 0; y < Height; y++)
 		{
-			auto tuple = TTuple<int32, int32>(x, y);
-			if (ParsedObstacles.Contains(tuple))
-			{
-				CreateTile(x, y, ETileType::Blocking);
-			}
-			else if (ParsedGoals.Contains(tuple))
-			{
-				CreateTile(x, y, ETileType::Goal);
-			}
-			else
-			{
-				CreateTile(x, y, ETileType::Empty);
-			}
+			CreateTile(x, y);
 		}
-	}
-
-	for (auto& block : ParsedBlocks)
-	{
-		CreateBlock(block.Key, block.Value);
 	}
 }
 
-void APushableBlockPuzzle::CreateTile(const int x, const int y, ETileType tileType)
+void APushableBlockPuzzle::Destroyed()
 {
-	UE_LOG(LogTemp, Warning, TEXT("%i %i"), x, y);
-	auto name = std::to_string(x) + " " + std::to_string(y);
+	ClearTiles();
+}
+
+void APushableBlockPuzzle::CreateTile(const int x, const int y)
+{
+	auto name = "Tile " + std::to_string(x) + " " + std::to_string(y);
 	
 	auto location = GetActorLocation();
 	auto tile = NewObject<UPuzzleTileComponent>(this, FName(name.c_str()));
@@ -130,67 +114,125 @@ void APushableBlockPuzzle::CreateTile(const int x, const int y, ETileType tileTy
 	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
 	tile->SetWorldLocation(FVector(x * 100, y * 100, 0) + location);
 	Tiles.Add(tile);
-	tile->EmptyColor = EmptyColor;
-	tile->BlockingColor = BlockingColor;
-	tile->GoalColor = GoalColor;
-	tile->TileType = tileType;
 	tile->UpdateMaterial();
-	/*
-
-	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->InitializeComponent();
-	UE_LOG(LogTemp, Warning, TEXT("%i"), RootComponent->GetNumChildrenComponents());
-	//Tiles.push_back(*tile);
-	//Tiles.Add(tile);*/
 }
 
-void APushableBlockPuzzle::CreateBlock(const int x, const int y)
+FVector APushableBlockPuzzle::GetLocation(int x, int y) const
 {
-	UE_LOG(LogTemp, Warning, TEXT("%i %i"), x, y);
-	auto name = std::to_string(x) + " " + std::to_string(y);
-
-	auto location = GetActorLocation();
-	auto tile = NewObject<UPuzzleTileComponent>(this, FName(name.c_str()));
-	tile->RegisterComponent();
-	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->SetWorldLocation(FVector(x * 100, y * 100, 100) + location);
-	Tiles.Add(tile);
-	tile->EmptyColor = EmptyColor;
-	tile->BlockingColor = BlockingColor;
-	tile->GoalColor = GoalColor;
-	tile->UpdateMaterial();
-	/*
-
-	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->InitializeComponent();
-	UE_LOG(LogTemp, Warning, TEXT("%i"), RootComponent->GetNumChildrenComponents());
-	//Tiles.push_back(*tile);
-	//Tiles.Add(tile);*/
+	return FVector(x * 100, y * 100, 101) + GetActorLocation();
 }
-
-TTuple<int32, int32> APushableBlockPuzzle::Parse(FString str)
-{
-	if (str.Len() < 3)
-	{
-		return TTuple<int32, int32>(-1, -1);
-	}
-	int index = str.Find(" ");
-	FString xstr = str.Mid(0, index);
-	FString ystr = str.Mid(index, str.Len() - index);
-	int32 x = FCString::Atoi(*xstr);
-	int32 y = FCString::Atoi(*ystr);
-	return TTuple<int32, int32>(x, y);
-}
-
 
 void APushableBlockPuzzle::ClearTiles()
 {
-	for (auto& tile : Tiles)
+	for (auto &tile : Tiles)
 	{
 		tile->DestroyComponent();
 	}
 	Tiles.Empty();
-	ParsedObstacles.Empty();
-	ParsedGoals.Empty();
-	ParsedBlocks.Empty();
+}
+
+void APushableBlockPuzzle::Push(int index, EBlockSide side)
+{
+	for (auto& block : PushableBlocks)
+	{
+		if (block->Id != index)
+		{
+			continue;
+		}
+		
+		FVector location = block->GetActorLocation();
+		const TTuple<int32, int32> coordinates = GetCoordinates(location);
+		block->X = coordinates.Key;
+		block->Y = coordinates.Value;
+		auto newCoordinates = PushBlockInDirection(block->X, block->Y, side);
+		block->X = newCoordinates.Key;
+		block->Y = newCoordinates.Value;
+		auto newLocation = GetLocation(newCoordinates.Key, newCoordinates.Value);
+		block->SetActorLocation(newLocation);
+	}
+}
+
+void APushableBlockPuzzle::UpdateLocation(APushableBlock2* block)
+{
+	auto location = GetLocation(block->X, block->Y);
+	block->SetActorLocation(location);
+}
+
+TTuple<int32, int32> APushableBlockPuzzle::PushBlockInDirection(int x, int y, EBlockSide side)
+{
+	int xDir = GetXDir(side);
+	int yDir = GetYDir(side);
+	if (!IsValidCell(x, y))
+	{
+		return TTuple<int32, int32>(-1, -1);
+	}
+	
+	Cells[x][y] = 0;
+	while (IsValidMove(x + xDir, y + yDir))
+	{
+		x += xDir;
+		y += yDir;
+	}
+	
+	Cells[x][y] = 1;
+
+	return TTuple<int32, int32>(x, y);
+}
+
+int APushableBlockPuzzle::GetXDir(EBlockSide side)
+{
+	if (side == EBlockSide::Left)
+	{
+		return 1;
+	}
+	if (side == EBlockSide::Right)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+int APushableBlockPuzzle::GetYDir(EBlockSide side)
+{
+	if (side == EBlockSide::Front)
+	{
+		return 1;
+	}
+	if (side == EBlockSide::Back)
+	{
+		return -1;
+	}
+	return 0;
+}
+
+bool APushableBlockPuzzle::IsValidCell(int x, int y)
+{
+	return x >= 0 && x < Width && y >= 0 && y < Height;
+}
+
+bool APushableBlockPuzzle::IsValidMove(int x, int y)
+{
+	return IsValidCell(x, y) && Cells[x][y] <= 0;
+}
+
+void APushableBlockPuzzle::InitializeWithSize(int width, int height)
+{
+	Cells = new int* [width];
+	for (int i = 0; i < width; i++)
+		Cells[i] = new int[height];
+
+
+	for (int i = 0; i < width; i++)
+		for (int j = 0; j < height; j++)
+		{
+			Cells[i][j] = 0;
+		}
+}
+
+TTuple<int32, int32> APushableBlockPuzzle::GetCoordinates(FVector& location) const
+{
+	const FVector offset = location - GetActorLocation();
+	double x = offset.X / 100.0;
+	double y = offset.Y / 100.0;
+	return TTuple<int32, int32>(x, y);
 }

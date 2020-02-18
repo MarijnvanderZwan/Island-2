@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Components/StaticMeshComponent.h"
-#include "ETileType.h"
 #include "PuzzleTileComponent.generated.h"
 
 /**
@@ -23,18 +22,5 @@ public:
 #endif
 	
 	void UpdateMaterial();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	ETileType TileType;
-	
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FColor EmptyColor;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FColor BlockingColor;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	FColor GoalColor;
-
 	void ClearTiles();
 };

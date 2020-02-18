@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "PuzzleTileComponent.h"
 #include <vector>
+#include "PushableBlock2.h"
 #include "PushableBlockPuzzle.generated.h"
 
 UCLASS()
@@ -30,15 +31,14 @@ public:
 	TArray<UPuzzleTileComponent*> Tiles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FString> Obstacles;
+	TArray<APushableBlock2*> PushableBlocks;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FString> Goals;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FString> Blocks;
-	
-	TArray<TTuple<int32, int32>> ParsedObstacles;
-	TArray<TTuple<int32, int32>> ParsedGoals;
-	TArray<TTuple<int32, int32>> ParsedBlocks;
+	TArray<AActor*> Goals;
+UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<AActor*> Obstacles;
+
+	int** Cells;
+	int Id;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int Width;
@@ -46,8 +46,6 @@ public:
 	int Height;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool TriggerUpdate;
-	
-	//TArray<UPuzzleTileComponent*> Tiles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FColor EmptyColor = FColor(0, 0, 0);
@@ -64,10 +62,28 @@ public:
 private:
 	void UpdateTiles();
 	void ClearTiles();
-	void CreateTile(int x, int y, ETileType tileType);
-	void CreateBlock(int x, int y);
-	TTuple<int32, int32> Parse(FString str);
-	void ParseObstacles();
-	void ParseGoals();
-	void ParseBlocks();
+	void CreateTile(int x, int y);
+	void InitializeLocation(FVector& location, int32 value);
+	UFUNCTION(BlueprintCallable)
+	void Push(int index, EBlockSide side);
+
+	TTuple<int32, int32> PushBlockInDirection(int x, int y, EBlockSide side);
+	TTuple<int32, int32> GetCoordinates(FVector& location) const;
+	
+	bool IsValidCell(int x, int y);
+
+	bool IsValidMove(int x, int y);
+
+	void InitializeWithSize(int width, int height);
+
+	int GetXDir(EBlockSide side);
+	int GetYDir(EBlockSide side);
+
+	void UpdateLocation(APushableBlock2* block);
+
+	FVector GetLocation(int x, int y) const;
+
+	void InitializeBlocks();
+	void InitializeObstacles();
+	void InitializeGoals();
 };
