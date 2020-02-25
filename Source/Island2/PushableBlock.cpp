@@ -47,7 +47,7 @@ void APushableBlock::MoveTowardsTarget(float DeltaTime)
 	if ((TargetLocation - nextLocation).Size2D() < Tolerance)
 	{
 		IsMoving = false;
-		SetActorLocation(TargetLocation);
+		SetActorLocation(FVector(TargetLocation));
 	}
 }
 
@@ -74,6 +74,6 @@ EBlockSide APushableBlock::GetBlockSide(const FVector& otherLocation)
 
 void APushableBlock::SetTargetLocation(const FVector& otherLocation)
 {
-	TargetLocation = otherLocation;
+	TargetLocation = FVector(otherLocation.X, otherLocation.Y, GetActorLocation().Z);
 	IsMoving = true;
 }
