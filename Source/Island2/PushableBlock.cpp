@@ -36,6 +36,7 @@ void APushableBlock::MoveTowardsTarget(float DeltaTime)
 
 	FVector currentLocation = GetActorLocation();
 	FVector difference = (TargetLocation - currentLocation);
+	difference = FVector(difference.X, difference.Y, 0);
 	float differenceLength = difference.Size();
 	difference.Normalize();
 
@@ -43,7 +44,7 @@ void APushableBlock::MoveTowardsTarget(float DeltaTime)
 
 	FVector nextLocation = currentLocation + difference * distanceToMove;
 	SetActorLocation(nextLocation);
-	if ((TargetLocation - nextLocation).Size() < Tolerance)
+	if ((TargetLocation - nextLocation).Size2D() < Tolerance)
 	{
 		IsMoving = false;
 		SetActorLocation(TargetLocation);
