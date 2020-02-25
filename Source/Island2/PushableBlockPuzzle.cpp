@@ -2,19 +2,58 @@
 #include <string>
 #include "PuzzleTileComponent.h"
 #include "PushableBlockTile.h"
+#include "PushableBlock.h"
+#include "Kismet/GameplayStatics.h"
 
-// Sets default values
 APushableBlockPuzzle::APushableBlockPuzzle()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	PrimaryActorTick.bCanEverTick = true;
-	UE_LOG(LogTemp, Warning, TEXT("Constructor called"));
+	Id = 0;
 }
 
 void APushableBlockPuzzle::BeginPlay()
 {
+	Grid = PushableBlockGrid(Width, Height);
+
+	InitializeBlocks();
+	InitializeObstacles();
+	InitializeGoals();
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("Begin play called"));
+}
+
+void APushableBlockPuzzle::InitializeBlocks()
+{
+	int i = 0;
+	for (APushableBlock*& block : PushableBlocks)
+	{
+		block->Id = i++;
+		FVector location = block->GetActorLocation();
+		InitializeLocation(location, 1);
+	}
+}
+
+void APushableBlockPuzzle::InitializeGoals()
+{
+	for (AActor*& goal : Goals)
+	{
+		FVector location = goal->GetActorLocation();
+		InitializeLocation(location, -1);
+	}
+}
+
+void APushableBlockPuzzle::InitializeObstacles()
+{
+	for (AActor*& obstacle : Obstacles)
+	{
+		FVector location = obstacle->GetActorLocation();
+		InitializeLocation(location, 2);
+	}
+}
+void APushableBlockPuzzle::InitializeLocation(FVector &location, int32 value)
+{
+	auto coordinates = GetCoordinates(location);
+	Grid.InitializeLocation(coordinates.Key, coordinates.Value, value);
 }
 
 void APushableBlockPuzzle::Tick(float DeltaTime)
@@ -22,81 +61,52 @@ void APushableBlockPuzzle::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-#if WITH_EDITOR
-void APushableBlockPuzzle::PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent)
+FVector APushableBlockPuzzle::GetLocation(int x, int y) const
 {
-	const FName width = FName("Width");
-	const FName height = FName("Height");
-	FName propertyName = PropertyChangedEvent.GetPropertyName();
-	if (propertyName != width && propertyName != height)
+	return FVector(x * 100, y * 100, 101) + GetActorLocation();
+}
+
+void APushableBlockPuzzle::Push(int index, EBlockSide side)
+{
+	auto block = GetBlock(index);
+	if (block == nullptr)
 	{
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("UPDATE!"));
-	Super::PostEditChangeProperty(PropertyChangedEvent);
-
-	UpdateTiles();
-	//UpdateTile();
-}
-#endif
-
-void APushableBlockPuzzle::Destroyed()
-{
-	UE_LOG(LogTemp, Warning, TEXT("Destroyed"));
-	ClearTiles();
-}
-
-void APushableBlockPuzzle::UpdateTile()
-{
-	ClearTiles();
-
-	for (int x = 0; x < 1; x++)
-	{
-		for (int y = 0; y < 1; y++)
-		{
-			CreateTile(x, y);
-		}
-	}
-}
-
-void APushableBlockPuzzle::UpdateTiles()
-{
-	for (int x = 0; x < Width; x++)
-	{
-		for (int y = 0; y < Height; y++)
-		{
-			CreateTile(x, y);
-		}
-	}
-}
-
-void APushableBlockPuzzle::CreateTile(int x, int y)
-{
-	UE_LOG(LogTemp, Warning, TEXT("%i %i"), x, y);
-	auto name = std::to_string(x) + " " + std::to_string(y);
 	
-	auto location = GetActorLocation();
-	auto tile = NewObject<UPuzzleTileComponent>(this, FName(name.c_str()));
-	tile->RegisterComponent();
-	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->SetWorldLocation(FVector(x * 200, y * 200, 0) + location);
-	/*
-	tile->EmptyColor = EmptyColor;
-	tile->BlockingColor = BlockingColor;
-	tile->GoalColor = GoalColor;
-	tile->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepWorldTransform);
-	tile->InitializeComponent();
-	UE_LOG(LogTemp, Warning, TEXT("%i"), RootComponent->GetNumChildrenComponents());
-	//Tiles.push_back(*tile);
-	//Tiles.Add(tile);*/
+	FVector location = block->GetActorLocation();
+	const TTuple<int, int> coordinates = GetCoordinates(location);
+	block->X = coordinates.Key;
+	block->Y = coordinates.Value;
+
+	auto newCoordinates = Grid.PushBlockInDirection(block->X, block->Y, side);
+	block->X = std::get<0>(newCoordinates);
+	block->Y = std::get<1>(newCoordinates);
+	auto newLocation = GetLocation(block->X, block->Y);
+	block->SetTargetLocation(newLocation);
+
+	if (Grid.PuzzleIsComplete())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Puzzle complete"));
+	}
 }
 
-
-void APushableBlockPuzzle::ClearTiles()
-{/*
-	for (auto& tile : Tiles)
+APushableBlock* APushableBlockPuzzle::GetBlock(int index)
+{
+	for (APushableBlock*& block : PushableBlocks)
 	{
-		tile->DestroyComponent();
+		if (block->Id == index && !block->IsMoving)
+		{
+			return block;
+		}
 	}
-	Tiles.Empty();*/
+	return nullptr;
+}
+
+TTuple<int, int> APushableBlockPuzzle::GetCoordinates(FVector& location) const
+{
+	const FVector offset = location - GetActorLocation();
+	double x = offset.X / 100.0;
+	double y = offset.Y / 100.0;
+	return TTuple<int, int>(x, y);
 }

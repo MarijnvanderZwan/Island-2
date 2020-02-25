@@ -34,18 +34,5 @@ void UPuzzleTileComponent::UpdateMaterial()
 	{
 		return;
 	}
-	switch (TileType)
-	{
-	case ETileType::Empty:
-		matInstance->SetVectorParameterValue("Color", EmptyColor);
-		break;
-	case ETileType::Blocking:
-		matInstance->SetVectorParameterValue("Color", BlockingColor);
-		break;
-	case ETileType::Goal:
-		matInstance->SetVectorParameterValue("Color", GoalColor);
-		break;
-	default:
-		break;
-	}
+	matInstance->SetVectorParameterValue("Color", FColor(0, 0, 0));
 }
