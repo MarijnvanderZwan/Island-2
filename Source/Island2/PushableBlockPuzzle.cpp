@@ -2,7 +2,7 @@
 #include <string>
 #include "PuzzleTileComponent.h"
 #include "PushableBlockTile.h"
-#include "PushableBlock2.h"
+#include "PushableBlock.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -155,9 +155,9 @@ void APushableBlockPuzzle::Push(int index, EBlockSide side)
 	}
 }
 
-APushableBlock2* APushableBlockPuzzle::GetBlock(int index)
+APushableBlock* APushableBlockPuzzle::GetBlock(int index)
 {
-	for (APushableBlock2*& block : PushableBlocks)
+	for (APushableBlock*& block : PushableBlocks)
 	{
 		if (block->Id == index && !block->IsMoving)
 		{

@@ -5,16 +5,16 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "EBlockSide.h"
-#include "PushableBlock2.generated.h"
+#include "PushableBlock.generated.h"
 
 UCLASS()
-class ISLAND2_API APushableBlock2 : public AActor
+class ISLAND2_API APushableBlock : public AActor
 {
 	GENERATED_BODY()
 	
 public:
 	// Sets default values for this actor's properties
-	APushableBlock2();
+	APushableBlock();
 	
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* Mesh;

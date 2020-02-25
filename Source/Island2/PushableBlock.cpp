@@ -1,9 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
-#include "PushableBlock2.h"
+#include "PushableBlock.h"
 #include "UObject/ConstructorHelpers.h"
 
 // Sets default values
-APushableBlock2::APushableBlock2()
+APushableBlock::APushableBlock()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -15,12 +15,12 @@ APushableBlock2::APushableBlock2()
 }
 
 // Called when the game starts or when spawned
-void APushableBlock2::BeginPlay()
+void APushableBlock::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-void APushableBlock2::Tick(float DeltaTime)
+void APushableBlock::Tick(float DeltaTime)
 {
 	if (IsMoving)
 	{
@@ -29,7 +29,7 @@ void APushableBlock2::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void APushableBlock2::MoveTowardsTarget(float DeltaTime)
+void APushableBlock::MoveTowardsTarget(float DeltaTime)
 {
 	const float MovementSpeed = 500;
 	const float Tolerance = 0.001;
@@ -50,7 +50,7 @@ void APushableBlock2::MoveTowardsTarget(float DeltaTime)
 	}
 }
 
-EBlockSide APushableBlock2::GetBlockSide(const FVector& otherLocation)
+EBlockSide APushableBlock::GetBlockSide(const FVector& otherLocation)
 {
 	auto location = GetActorLocation();
 	auto difference = otherLocation - location;
@@ -71,7 +71,7 @@ EBlockSide APushableBlock2::GetBlockSide(const FVector& otherLocation)
 	return EBlockSide::Back;
 }
 
-void APushableBlock2::SetTargetLocation(const FVector& otherLocation)
+void APushableBlock::SetTargetLocation(const FVector& otherLocation)
 {
 	TargetLocation = otherLocation;
 	IsMoving = true;

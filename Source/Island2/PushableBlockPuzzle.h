@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "PuzzleTileComponent.h"
 #include <vector>
-#include "PushableBlock2.h"
+#include "PushableBlock.h"
 #include "PushableBlockGrid.h"
 #include "PushableBlockPuzzle.generated.h"
 
@@ -32,7 +32,7 @@ public:
 	TArray<UPuzzleTileComponent*> Tiles;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<APushableBlock2*> PushableBlocks;
+	TArray<APushableBlock*> PushableBlocks;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> Goals;
 UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -70,7 +70,7 @@ private:
 	//int GetXDir(EBlockSide side);
 	//int GetYDir(EBlockSide side);
 
-	void UpdateLocation(APushableBlock2* block);
+	void UpdateLocation(APushableBlock* block);
 
 	FVector GetLocation(int x, int y) const;
 
@@ -78,5 +78,5 @@ private:
 	void InitializeObstacles();
 	void InitializeGoals();
 
-	APushableBlock2* GetBlock(int index);
+	APushableBlock* GetBlock(int index);
 };
