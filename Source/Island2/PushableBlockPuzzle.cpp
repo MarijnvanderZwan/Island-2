@@ -63,7 +63,7 @@ void APushableBlockPuzzle::Tick(float DeltaTime)
 
 FVector APushableBlockPuzzle::GetLocation(int x, int y) const
 {
-	return FVector(x * 100, y * 100, 101) + GetActorLocation();
+	return FVector(x * 100, y * 100, 0) + GetActorLocation();
 }
 
 void APushableBlockPuzzle::Push(int index, EBlockSide side)
