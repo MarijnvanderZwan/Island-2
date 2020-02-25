@@ -25,10 +25,7 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	int PuzzleId;
 
-	UPROPERTY(VisibleAnywhere)
 	int X;
-
-	UPROPERTY(VisibleAnywhere)
 	int Y;
 
 	FVector TargetLocation;
