@@ -30,6 +30,10 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	int Y;
+
+	FVector TargetLocation;
+
+	bool IsMoving;
 	
 protected:
 	// Called when the game starts or when spawned
@@ -41,4 +45,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	EBlockSide GetBlockSide(const FVector& otherLocation);
+
+	void SetTargetLocation(const FVector& otherLocation);
+
+private:
+	void MoveTowardsTarget(float DeltaTime);
 };

@@ -15,7 +15,9 @@ APushableBlockPuzzle::APushableBlockPuzzle()
 
 void APushableBlockPuzzle::BeginPlay()
 {
-	InitializeWithSize(Width, Height);
+	Grid = PushableBlockGrid(Width, Height);
+
+	//InitializeWithSize(Width, Height);
 	InitializeBlocks();
 	InitializeObstacles();
 	InitializeGoals();
@@ -53,10 +55,7 @@ void APushableBlockPuzzle::InitializeObstacles()
 void APushableBlockPuzzle::InitializeLocation(FVector &location, int32 value)
 {
 	auto coordinates = GetCoordinates(location);
-	if (IsValidCell(coordinates.Key, coordinates.Value))
-	{
-		Cells[coordinates.Key][coordinates.Value] = value;
-	}
+	Grid.InitializeLocation(coordinates.Key, coordinates.Value, value);
 }
 
 void APushableBlockPuzzle::Tick(float DeltaTime)
@@ -133,106 +132,45 @@ void APushableBlockPuzzle::ClearTiles()
 
 void APushableBlockPuzzle::Push(int index, EBlockSide side)
 {
-	for (auto& block : PushableBlocks)
+	auto block = GetBlock(index);
+	if (block == nullptr)
 	{
-		if (block->Id != index)
-		{
-			continue;
-		}
-		
-		FVector location = block->GetActorLocation();
-		const TTuple<int32, int32> coordinates = GetCoordinates(location);
-		block->X = coordinates.Key;
-		block->Y = coordinates.Value;
-		auto newCoordinates = PushBlockInDirection(block->X, block->Y, side);
-		block->X = newCoordinates.Key;
-		block->Y = newCoordinates.Value;
-		auto newLocation = GetLocation(newCoordinates.Key, newCoordinates.Value);
-		block->SetActorLocation(newLocation);
-	}
-}
-
-void APushableBlockPuzzle::UpdateLocation(APushableBlock2* block)
-{
-	auto location = GetLocation(block->X, block->Y);
-	block->SetActorLocation(location);
-}
-
-TTuple<int32, int32> APushableBlockPuzzle::PushBlockInDirection(int x, int y, EBlockSide side)
-{
-	int xDir = GetXDir(side);
-	int yDir = GetYDir(side);
-	if (!IsValidCell(x, y))
-	{
-		return TTuple<int32, int32>(-1, -1);
+		return;
 	}
 	
-	Cells[x][y] = 0;
-	while (IsValidMove(x + xDir, y + yDir))
-	{
-		x += xDir;
-		y += yDir;
-	}
-	
-	Cells[x][y] = 1;
+	FVector location = block->GetActorLocation();
+	const TTuple<int, int> coordinates = GetCoordinates(location);
+	block->X = coordinates.Key;
+	block->Y = coordinates.Value;
 
-	return TTuple<int32, int32>(x, y);
+	auto newCoordinates = Grid.PushBlockInDirection(block->X, block->Y, side);
+	block->X = std::get<0>(newCoordinates);
+	block->Y = std::get<1>(newCoordinates);
+	auto newLocation = GetLocation(block->X, block->Y);
+	block->SetTargetLocation(newLocation);
+
+	if (Grid.PuzzleIsComplete())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Puzzle complete"));
+	}
 }
 
-int APushableBlockPuzzle::GetXDir(EBlockSide side)
+APushableBlock2* APushableBlockPuzzle::GetBlock(int index)
 {
-	if (side == EBlockSide::Left)
+	for (APushableBlock2*& block : PushableBlocks)
 	{
-		return 1;
-	}
-	if (side == EBlockSide::Right)
-	{
-		return -1;
-	}
-	return 0;
-}
-
-int APushableBlockPuzzle::GetYDir(EBlockSide side)
-{
-	if (side == EBlockSide::Front)
-	{
-		return 1;
-	}
-	if (side == EBlockSide::Back)
-	{
-		return -1;
-	}
-	return 0;
-}
-
-bool APushableBlockPuzzle::IsValidCell(int x, int y)
-{
-	return x >= 0 && x < Width && y >= 0 && y < Height;
-}
-
-bool APushableBlockPuzzle::IsValidMove(int x, int y)
-{
-	return IsValidCell(x, y) && Cells[x][y] <= 0;
-}
-
-void APushableBlockPuzzle::InitializeWithSize(int width, int height)
-{
-	Cells = new int* [width];
-	for (int i = 0; i < width; i++)
-		Cells[i] = new int[height];
-
-
-	for (int i = 0; i < width; i++)
-		for (int j = 0; j < height; j++)
+		if (block->Id == index && !block->IsMoving)
 		{
-			Cells[i][j] = 0;
+			return block;
 		}
+	}
+	return nullptr;
 }
 
-TTuple<int32, int32> APushableBlockPuzzle::GetCoordinates(FVector& location) const
+TTuple<int, int> APushableBlockPuzzle::GetCoordinates(FVector& location) const
 {
 	const FVector offset = location - GetActorLocation();
 	double x = offset.X / 100.0;
 	double y = offset.Y / 100.0;
-	return TTuple<int32, int32>(x, y);
+	return TTuple<int, int>(x, y);
 }

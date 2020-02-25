@@ -20,10 +20,34 @@ void APushableBlock2::BeginPlay()
 	Super::BeginPlay();
 }
 
-// Called every frame
 void APushableBlock2::Tick(float DeltaTime)
 {
+	if (IsMoving)
+	{
+		MoveTowardsTarget(DeltaTime);
+	}
 	Super::Tick(DeltaTime);
+}
+
+void APushableBlock2::MoveTowardsTarget(float DeltaTime)
+{
+	const float MovementSpeed = 500;
+	const float Tolerance = 0.001;
+
+	FVector currentLocation = GetActorLocation();
+	FVector difference = (TargetLocation - currentLocation);
+	float differenceLength = difference.Size();
+	difference.Normalize();
+
+	float distanceToMove = FMath::Min(MovementSpeed * DeltaTime, differenceLength);
+
+	FVector nextLocation = currentLocation + difference * distanceToMove;
+	SetActorLocation(nextLocation);
+	if ((TargetLocation - nextLocation).Size() < Tolerance)
+	{
+		IsMoving = false;
+		SetActorLocation(TargetLocation);
+	}
 }
 
 EBlockSide APushableBlock2::GetBlockSide(const FVector& otherLocation)
@@ -45,4 +69,10 @@ EBlockSide APushableBlock2::GetBlockSide(const FVector& otherLocation)
 		return EBlockSide::Right;
 	}
 	return EBlockSide::Back;
+}
+
+void APushableBlock2::SetTargetLocation(const FVector& otherLocation)
+{
+	TargetLocation = otherLocation;
+	IsMoving = true;
 }

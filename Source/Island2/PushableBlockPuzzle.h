@@ -7,6 +7,7 @@
 #include "PuzzleTileComponent.h"
 #include <vector>
 #include "PushableBlock2.h"
+#include "PushableBlockGrid.h"
 #include "PushableBlockPuzzle.generated.h"
 
 UCLASS()
@@ -37,7 +38,8 @@ public:
 UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> Obstacles;
 
-	int** Cells;
+	//int** Cells;
+	PushableBlockGrid Grid;
 	int Id;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -46,15 +48,6 @@ UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int Height;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool TriggerUpdate;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor EmptyColor = FColor(0, 0, 0);
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor BlockingColor = FColor(1, 0, 0);
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FColor GoalColor = FColor(0, 1, 0);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<int> TileTypes;
@@ -67,17 +60,15 @@ private:
 	UFUNCTION(BlueprintCallable)
 	void Push(int index, EBlockSide side);
 
-	TTuple<int32, int32> PushBlockInDirection(int x, int y, EBlockSide side);
-	TTuple<int32, int32> GetCoordinates(FVector& location) const;
+	//TTuple<int32, int32> PushBlockInDirection(int x, int y, EBlockSide side);
+	TTuple<int, int> GetCoordinates(FVector& location) const;
 	
-	bool IsValidCell(int x, int y);
+	//bool IsValidCell(std::tuple<int, int> tuple);
+	//bool IsValidMove(int x, int y);
+	//void InitializeWithSize(int width, int height);
 
-	bool IsValidMove(int x, int y);
-
-	void InitializeWithSize(int width, int height);
-
-	int GetXDir(EBlockSide side);
-	int GetYDir(EBlockSide side);
+	//int GetXDir(EBlockSide side);
+	//int GetYDir(EBlockSide side);
 
 	void UpdateLocation(APushableBlock2* block);
 
@@ -86,4 +77,6 @@ private:
 	void InitializeBlocks();
 	void InitializeObstacles();
 	void InitializeGoals();
+
+	APushableBlock2* GetBlock(int index);
 };
