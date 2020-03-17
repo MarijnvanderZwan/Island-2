@@ -22,14 +22,15 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	int Id;
 
-	UPROPERTY(VisibleAnywhere)
-	int PuzzleId;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FGuid PuzzleId;
 
 	int X;
 	int Y;
 
 	FVector TargetLocation;
 
+	UPROPERTY(BlueprintReadOnly)
 	bool IsMoving;
 	
 protected:

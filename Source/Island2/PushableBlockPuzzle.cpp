@@ -9,13 +9,12 @@ APushableBlockPuzzle::APushableBlockPuzzle()
 {
 	RootComponent = CreateDefaultSubobject<USceneComponent>("SceneComponent");
 	PrimaryActorTick.bCanEverTick = true;
-	Id = 0;
+	Id = FGuid::NewGuid();
 }
 
 void APushableBlockPuzzle::BeginPlay()
 {
 	Grid = PushableBlockGrid(Width, Height);
-
 	InitializeBlocks();
 	InitializeObstacles();
 	InitializeGoals();
@@ -28,6 +27,7 @@ void APushableBlockPuzzle::InitializeBlocks()
 	for (APushableBlock*& block : PushableBlocks)
 	{
 		block->Id = i++;
+		block->PuzzleId = Id;
 		FVector location = block->GetActorLocation();
 		InitializeLocation(location, 1);
 	}
@@ -63,7 +63,7 @@ void APushableBlockPuzzle::Tick(float DeltaTime)
 
 FVector APushableBlockPuzzle::GetLocation(int x, int y) const
 {
-	return FVector(x * 100, y * 100, 0) + GetActorLocation();
+	return FVector(x * TileSize, y * TileSize, 0) + GetActorLocation();
 }
 
 void APushableBlockPuzzle::Push(int index, EBlockSide side)
@@ -106,7 +106,7 @@ APushableBlock* APushableBlockPuzzle::GetBlock(int index)
 TTuple<int, int> APushableBlockPuzzle::GetCoordinates(FVector& location) const
 {
 	const FVector offset = location - GetActorLocation();
-	double x = offset.X / 100.0;
-	double y = offset.Y / 100.0;
+	double x = offset.X / TileSize;
+	double y = offset.Y / TileSize;
 	return TTuple<int, int>(x, y);
 }

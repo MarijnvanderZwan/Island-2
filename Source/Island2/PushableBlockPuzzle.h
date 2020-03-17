@@ -29,11 +29,12 @@ public:
 	TArray<APushableBlock*> PushableBlocks;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> Goals;
-UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<AActor*> Obstacles;
 
 	PushableBlockGrid Grid;
-	int Id;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGuid Id;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int Width;
@@ -54,4 +55,6 @@ private:
 	void InitializeGoals();
 
 	APushableBlock* GetBlock(int index);
+
+	const double TileSize = 200;
 };
